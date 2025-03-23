@@ -393,8 +393,9 @@ exit(int status, char *msg)
 
 // Wait for a child process to exit and return its pid.
 // Return -1 if this process has no children.
+//updated for task 3
 int
-wait(uint64 addr)
+wait(uint64 addr, uint64 msg_addr)
 {
   struct proc *pp;
   int havekids, pid;
@@ -420,6 +421,18 @@ wait(uint64 addr)
             release(&wait_lock);
             return -1;
           }
+          
+          // Copy the exit message if msg_addr is provided
+          // added for task 3
+          if(msg_addr != 0) {
+            if(copyout(p->pagetable, msg_addr, (char *)pp->exit_msg, 
+                      sizeof(pp->exit_msg)) < 0) {
+              release(&pp->lock);
+              release(&wait_lock);
+              return -1;
+            }
+          }
+
           freeproc(pp);
           release(&pp->lock);
           release(&wait_lock);
