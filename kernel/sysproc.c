@@ -6,12 +6,21 @@
 #include "spinlock.h"
 #include "proc.h"
 
+// updated for task 3
 uint64
 sys_exit(void)
 {
   int n;
+  char msg[32];
+  
   argint(0, &n);
-  exit(n);
+  
+  // Get the exit message (default to empty string if not provided)
+  if(argstr(1, msg, sizeof(msg)) < 0) {
+    msg[0] = '\0';
+  }
+  
+  exit(n, msg);
   return 0;  // not reached
 }
 
