@@ -66,7 +66,7 @@ runcmd(struct cmd *cmd)
   struct redircmd *rcmd;
 
   if(cmd == 0)
-    exit(1);
+    exit(1, "empty command"); // updated for task3
 
   switch(cmd->type){
   default:
@@ -75,9 +75,10 @@ runcmd(struct cmd *cmd)
   case EXEC:
     ecmd = (struct execcmd*)cmd;
     if(ecmd->argv[0] == 0)
-      exit(1);
+      exit(1,"no executable specified"); // updated for task3
     exec(ecmd->argv[0], ecmd->argv);
     fprintf(2, "exec %s failed\n", ecmd->argv[0]);
+    exit(1, "exec failed"); // added for task3
     break;
 
   case REDIR:
@@ -85,7 +86,7 @@ runcmd(struct cmd *cmd)
     close(rcmd->fd);
     if(open(rcmd->file, rcmd->mode) < 0){
       fprintf(2, "open %s failed\n", rcmd->file);
-      exit(1);
+      exit(1, "open failed"); // added for task3
     }
     runcmd(rcmd->cmd);
     break;
@@ -94,7 +95,10 @@ runcmd(struct cmd *cmd)
     lcmd = (struct listcmd*)cmd;
     if(fork1() == 0)
       runcmd(lcmd->left);
-    wait(0);
+    // updated for task3
+    // Added buffer for exit msg
+    char msg1[32];
+    wait(0, msg1);
     runcmd(lcmd->right);
     break;
 
@@ -118,8 +122,10 @@ runcmd(struct cmd *cmd)
     }
     close(p[0]);
     close(p[1]);
-    wait(0);
-    wait(0);
+    char msg2[32]; // added for task3
+    char msg3[32]; // added for task3
+    wait(0, msg2); // updated for task3
+    wait(0, msg3); // updated for task3
     break;
 
   case BACK:
@@ -128,7 +134,7 @@ runcmd(struct cmd *cmd)
       runcmd(bcmd->cmd);
     break;
   }
-  exit(0);
+  exit(0,""); // updated for task3
 }
 
 int
@@ -167,16 +173,22 @@ main(void)
     }
     if(fork1() == 0)
       runcmd(parsecmd(buf));
-    wait(0);
+  
+    char exit_msg[32]; // added for task3
+    wait(0,exit_msg); // updated for task3
+
+    if(exit_msg[0] != '\0') {
+      printf("Child exited with message: %s\n", exit_msg);
+    }
   }
-  exit(0);
+  exit(0,"shell exit"); // updated for task3
 }
 
 void
 panic(char *s)
 {
   fprintf(2, "%s\n", s);
-  exit(1);
+  exit(1, s); // updated for task3
 }
 
 int

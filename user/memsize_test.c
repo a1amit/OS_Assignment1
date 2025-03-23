@@ -18,7 +18,7 @@ main(int argc, char *argv[])
   mem = malloc(20 * 1024);
   if(mem == 0) {
     printf("malloc failed\n");
-    exit(1);
+    exit(1,"");
   }
   
   // Use the memory to ensure it's actually allocated
@@ -37,5 +37,5 @@ main(int argc, char *argv[])
   printf("Memory size after free: %d bytes\n", final_size);
   printf("Difference from initial: %d bytes\n", final_size - initial_size);
   
-  exit(0);
+  exit(0,"");
 }
