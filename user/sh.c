@@ -176,12 +176,16 @@ main(void)
   
     char exit_msg[32]; // added for task3
     wait(0,exit_msg); // updated for task3
-
+    
+    // added for task3
     if(exit_msg[0] != '\0') {
-      printf("Child exited with message: %s\n", exit_msg);
+      fprintf(2, "%s\n", exit_msg);
     }
+    // if(exit_msg[0] != '\0') {
+    //   printf("Child exited with message: %s\n", exit_msg);
+    // }
   }
-  exit(0,"shell exit"); // updated for task3
+exit(0,"shell exit"); // ted for task3
 }
 
 void
