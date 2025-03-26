@@ -185,7 +185,7 @@ main(void)
     //   printf("Child exited with message: %s\n", exit_msg);
     // }
   }
-exit(0,"shell exit"); // ted for task3
+exit(0,"shell exit"); // updated for task3
 }
 
 void
