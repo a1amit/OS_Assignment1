@@ -701,8 +701,6 @@ procdump(void)
   }
 }
 
-// ...existing code...
-
 // Create n child processes and return their PIDs
 // added for task 4
 uint64
