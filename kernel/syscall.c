@@ -102,6 +102,8 @@ extern uint64 sys_link(void);
 extern uint64 sys_mkdir(void);
 extern uint64 sys_close(void);
 extern uint64 sys_memsize(void); // Added for Task 2
+extern uint64 sys_forkn(void); // Added for Task 4
+extern uint64 sys_waitall(void); // Added for Task 4
 
 
 // An array mapping syscall numbers from syscall.h
@@ -129,6 +131,8 @@ static uint64 (*syscalls[])(void) = {
 [SYS_mkdir]   sys_mkdir,
 [SYS_close]   sys_close,
 [SYS_memsize] sys_memsize, // Added for Task 2
+[SYS_forkn]   sys_forkn, // Added for Task 4
+[SYS_waitall] sys_waitall, // Added for Task 4
 };
 
 void

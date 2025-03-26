@@ -20,4 +20,6 @@
 #define SYS_link   19
 #define SYS_mkdir  20
 #define SYS_close  21
-#define SYS_memsize 22
+#define SYS_memsize 22 // added for task 2
+#define SYS_forkn   23 // added for task 4
+#define SYS_waitall 24 // added for task 4

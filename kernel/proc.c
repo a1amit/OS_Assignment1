@@ -700,3 +700,192 @@ procdump(void)
     printf("\n");
   }
 }
+
+// ...existing code...
+
+// Create n child processes and return their PIDs
+// added for task 4
+uint64
+sys_forkn(void)
+{
+  int n;
+  uint64 pids_addr;
+  struct proc *p;
+  int i, pid;
+  int created_pids[NPROC];
+  int created_count = 0;
+  struct proc *np;
+  
+    // Get arguments from user space - these functions are void return type
+    argint(0, &n);
+    argaddr(1, &pids_addr);
+  
+  // Check if n is valid
+  if(n < 1 || n > 16)
+    return -1;
+  
+  p = myproc();
+  
+  // First, create all child processes without releasing them to runnable state
+  for(i = 0; i < n; i++) {
+    // Allocate process
+    if((np = allocproc()) == 0) {
+      goto bad;
+    }
+
+    // Copy user memory from parent to child
+    if(uvmcopy(p->pagetable, np->pagetable, p->sz) < 0) {
+      freeproc(np);
+      release(&np->lock);
+      goto bad;
+    }
+    
+    np->sz = p->sz;
+    
+    // Copy saved user registers
+    *(np->trapframe) = *(p->trapframe);
+    
+    // Child returns i+1 (1-based index of child)
+    np->trapframe->a0 = i + 1;
+    
+    // Inherit file descriptors
+    for(int j = 0; j < NOFILE; j++)
+      if(p->ofile[j])
+        np->ofile[j] = filedup(p->ofile[j]);
+    np->cwd = idup(p->cwd);
+    
+    safestrcpy(np->name, p->name, sizeof(p->name));
+    
+    pid = np->pid;
+    created_pids[created_count++] = pid;
+    
+    // Set parent
+    np->parent = p;
+    
+    // Set empty exit message
+    np->exit_msg[0] = '\0';
+    
+    // Keep process in USED state for now (not RUNNABLE)
+    release(&np->lock);
+  }
+  
+  // Copy PIDs to user space
+  if(copyout(p->pagetable, pids_addr, (char*)created_pids, n * sizeof(int)) < 0) {
+    goto bad;
+  }
+  
+  // All processes created successfully, make them runnable
+  for(int j = 0; j < created_count; j++) {
+    for(struct proc *pp = proc; pp < &proc[NPROC]; pp++) {
+      acquire(&pp->lock);
+      if(pp->pid == created_pids[j] && pp->state == USED) {
+        pp->state = RUNNABLE;
+        release(&pp->lock);
+        break;
+      }
+      release(&pp->lock);
+    }
+  }
+  
+  return 0;  // Parent returns 0 on success
+
+bad:
+  // Clean up already allocated processes
+  for(int j = 0; j < created_count; j++) {
+    for(struct proc *pp = proc; pp < &proc[NPROC]; pp++) {
+      acquire(&pp->lock);
+      if(pp->pid == created_pids[j] && pp->state == USED) {
+        freeproc(pp);
+        release(&pp->lock);
+        break;
+      }
+      release(&pp->lock);
+    }
+  }
+  return -1;
+}
+
+// Wait for all child processes to finish
+uint64
+sys_waitall(void)
+{
+  uint64 n_addr, statuses_addr;
+  struct proc *p = myproc();
+  struct proc *pp;
+  int havekids, found_alive;
+  int child_count = 0;
+  int statuses[NPROC];
+  
+  // Get arguments from user space
+  argaddr(0, &n_addr);
+  argaddr(1, &statuses_addr);
+
+  acquire(&wait_lock);
+
+  for(;;) {
+    // Scan for zombie children first
+    havekids = 0;
+    found_alive = 0;
+    child_count = 0;
+    
+    // First scan to check if we have any children at all
+    for(pp = proc; pp < &proc[NPROC]; pp++) {
+      if(pp->parent == p) {
+        havekids = 1;
+        acquire(&pp->lock);
+        if(pp->state != ZOMBIE && pp->state != UNUSED) {
+          found_alive = 1;
+        }
+        release(&pp->lock);
+      }
+    }
+
+    // No children at all
+    if(!havekids) {
+      int zero = 0;
+      if(copyout(p->pagetable, n_addr, (char*)&zero, sizeof(zero)) < 0) {
+        release(&wait_lock);
+        return -1;
+      }
+      release(&wait_lock);
+      return 0;
+    }
+
+    // If any children are still alive, wait for them
+    if(found_alive) {
+      sleep(p, &wait_lock);
+      continue;
+    }
+    
+    // At this point, all children are either ZOMBIE or UNUSED
+    // Collect all zombie children and their statuses
+    for(pp = proc; pp < &proc[NPROC]; pp++) {
+      if(pp->parent == p) {
+        acquire(&pp->lock);
+        if(pp->state == ZOMBIE) {
+          statuses[child_count++] = pp->xstate;
+          
+          // Free the child process
+          freeproc(pp);
+        }
+        release(&pp->lock);
+      }
+    }
+    
+    // Return the number of children and their statuses
+    if(copyout(p->pagetable, n_addr, (char*)&child_count, sizeof(child_count)) < 0) {
+      release(&wait_lock);
+      return -1;
+    }
+    
+    if(child_count > 0) {
+      if(copyout(p->pagetable, statuses_addr, (char*)statuses, sizeof(int) * child_count) < 0) {
+        release(&wait_lock);
+        return -1;
+      }
+    }
+    
+    release(&wait_lock);
+    return 0;
+  }
+}

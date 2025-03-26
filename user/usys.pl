@@ -37,3 +37,5 @@ entry("sbrk");
 entry("sleep");
 entry("uptime");
 entry("memsize"); # added for Task 2
+entry("forkn"); # added for Task 4
+entry("waitall"); # added for Task 4
