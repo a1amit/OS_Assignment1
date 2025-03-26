@@ -97,8 +97,11 @@ runcmd(struct cmd *cmd)
       runcmd(lcmd->left);
     // updated for task3
     // Added buffer for exit msg
-    char msg1[32];
-    wait(0, msg1);
+    char exit_msg_list[32];
+    wait(0, exit_msg_list);
+    if(exit_msg_list[0] != '\0') {
+      fprintf(2, "%s\n", exit_msg_list);
+    }
     runcmd(lcmd->right);
     break;
 
@@ -122,10 +125,16 @@ runcmd(struct cmd *cmd)
     }
     close(p[0]);
     close(p[1]);
-    char msg2[32]; // added for task3
-    char msg3[32]; // added for task3
-    wait(0, msg2); // updated for task3
-    wait(0, msg3); // updated for task3
+    char exit_msg_pipe1[32]; // added for task3
+    char exit_msg_pipe2[32]; // added for task3
+    wait(0, exit_msg_pipe1); // updated for task3
+    if(exit_msg_pipe1[0] != '\0') {
+      fprintf(2, "%s\n", exit_msg_pipe1);
+    }
+    wait(0, exit_msg_pipe2); // updated for task3
+    if(exit_msg_pipe2[0] != '\0') {
+      fprintf(2, "%s\n", exit_msg_pipe2);
+    }
     break;
 
   case BACK:
@@ -174,12 +183,12 @@ main(void)
     if(fork1() == 0)
       runcmd(parsecmd(buf));
   
-    char exit_msg[32]; // added for task3
-    wait(0,exit_msg); // updated for task3
+    char exit_msg_main[32]; // added for task3
+    wait(0,exit_msg_main); // updated for task3
     
     // added for task3
-    if(exit_msg[0] != '\0') {
-      fprintf(2, "%s\n", exit_msg);
+    if(exit_msg_main[0] != '\0') {
+      fprintf(2, "%s\n", exit_msg_main);
     }
     // if(exit_msg[0] != '\0') {
     //   printf("Child exited with message: %s\n", exit_msg);
